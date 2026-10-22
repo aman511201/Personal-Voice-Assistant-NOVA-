@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova AI Voice Assistant</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%3E<text y=%2226%22 font-size=%2228%22>✨</text></svg>">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            nova: {
+              50: '#eef2ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              accent: '#38bdf8',
+              glow: '#c084fc'
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'spin-slow': 'spin 12s linear infinite',
+            'float': 'float 4s ease-in-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-10px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Custom glowing orb animations */
+    .orb {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #38bdf8, #818cf8, #4f46e5);
+      box-shadow: 0 0 50px rgba(99, 102, 241, 0.6), inset 0 0 30px rgba(255, 255, 255, 0.4);
+      transition: all 0.4s ease;
+    }
+    .orb.idle {
+      animation: float 4s ease-in-out infinite, pulse 3s infinite;
+      box-shadow: 0 0 45px rgba(99, 102, 241, 0.5);
+    }
+    .orb.listening {
+      transform: scale(1.15);
+      background: radial-gradient(circle at 30% 30%, #4ade80, #10b981, #059669);
+      box-shadow: 0 0 80px rgba(16, 185, 129, 0.8), inset 0 0 40px rgba(255, 255, 255, 0.6);
+      animation: pulse 1s infinite alternate;
+    }
+    .orb.thinking {
+      background: radial-gradient(circle at 30% 30%, #c084fc, #ec4899, #8b5cf6);
+      box-shadow: 0 0 80px rgba(236, 72, 153, 0.8);
+      animation: spin-slow 4s linear infinite;
+    }
+    .orb.speaking {
+      background: radial-gradient(circle at 30% 30%, #38bdf8, #6366f1, #a855f7);
+      box-shadow: 0 0 90px rgba(56, 189, 248, 0.8);
+      animation: pulse 0.7s infinite alternate;
+    }
+
+    /* Glassmorphism */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="glass-panel sticky top-0 z-50 border-b border-slate-800/80 px-6 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-sky-400 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-sky-300 bg-clip-text text-transparent">NOVA</h1>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">v2.0</span>
+          </div>
+          <p class="text-xs text-slate-400">Intelligent Voice & Memory Assistant</p>
+        </div>
+      </div>
+
+      <!-- Center Status / Wake Word Indicator -->
+      <div class="hidden md:flex items-center gap-4 bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-800">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span class="text-slate-300 font-medium">Wake Word:</span>
+          <span class="text-sky-400 font-semibold bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">"Hey Nova"</span>
+        </div>
+        <div class="h-3.5 w-px bg-slate-800"></div>
+        <div class="flex items-center gap-1.5 text-xs text-slate-400">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>100% Local Wake Word</span>
+        </div>
+      </div>
+
+      <!-- Right Tab Navigation & Controls -->
+      <div class="flex items-center gap-2">
+        <nav class="flex bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-medium">
+          <button onclick="switchTab('assistant')" id="tab-btn-assistant" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 text-white shadow-sm flex items-center gap-1.5 transition">
+            <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+            <span>Assistant</span>
+          </button>
+          <button onclick="switchTab('memory')" id="tab-btn-memory" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+            <i data-lucide="brain" class="w-3.5 h-3.5"></i>
+            <span>Memory Vault</span>
+          </button>
+          <button onclick="switchTab('security')" id="tab-btn-security" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+            <span>Privacy</span>
+          </button>
+        </nav>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+    <!-- ============================================== -->
+    <!-- TAB 1: ASSISTANT (ORB, WAVEFORM & LIVE CHAT)   -->
+    <!-- ============================================== -->
+    <div id="tab-assistant" class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+
+      <!-- Left Column: Glowing Interactive AI Orb & Voice Controller -->
+      <div class="lg:col-span-5 glass-panel rounded-3xl p-6 flex flex-col items-center justify-between relative overflow-hidden shadow-2xl border border-slate-800/80">
+        
+        <!-- Ambient Background Glow -->
+        <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-sky-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Top Status Bar -->
+        <div class="w-full flex items-center justify-between text-xs text-slate-400 z-10">
+          <div class="flex items-center gap-2">
+            <i data-lucide="cpu" class="w-4 h-4 text-indigo-400"></i>
+            <span id="user-greeting">Ready to converse</span>
+          </div>
+          <button onclick="toggleAudioMute()" id="mute-toggle" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 flex items-center gap-1.5 border border-slate-700/60 transition">
+            <i data-lucide="volume-2" id="mute-icon" class="w-3.5 h-3.5 text-sky-400"></i>
+            <span id="mute-label">Audio On</span>
+          </button>
+        </div>
+
+        <!-- Central Glowing AI Orb -->
+        <div class="my-auto py-10 flex flex-col items-center justify-center z-10">
+          <div id="nova-orb" class="orb idle cursor-pointer relative flex items-center justify-center" onclick="toggleMicrophone()">
+            <!-- Internal quantum rings -->
+            <div class="w-28 h-28 rounded-full border border-white/20 animate-spin-slow pointer-events-none"></div>
+            <i data-lucide="mic" id="orb-mic-icon" class="w-10 h-10 text-white drop-shadow-md"></i>
+          </div>
+
+          <!-- Dynamic Status Text -->
+          <div class="mt-8 text-center">
+            <h3 id="assistant-status-title" class="text-xl font-bold tracking-tight text-white">Standing by...</h3>
+            <p id="assistant-status-desc" class="text-xs text-slate-400 mt-1 max-w-xs">
+              Say <span class="text-sky-300 font-semibold">"Hey Nova"</span> or click the orb to talk
+            </p>
+          </div>
+
+          <!-- Audio Waveform Canvas -->
+          <canvas id="waveform-canvas" width="280" height="40" class="mt-4 rounded-lg opacity-80"></canvas>
+        </div>
+
+        <!-- Push-to-Talk & Action Dock -->
+        <div class="w-full flex items-center justify-center gap-3 z-10 pt-4 border-t border-slate-800/60">
+          <button id="record-btn" onclick="toggleMicrophone()" class="px-6 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-sky-500 to-indigo-500 hover:brightness-110 text-white font-medium text-sm flex items-center gap-2 shadow-lg shadow-indigo-500/25 transition active:scale-95">
+            <i data-lucide="mic" class="w-4 h-4"></i>
+            <span id="record-btn-text">Tap to Speak</span>
+          </button>
+          <button onclick="clearChatFeed()" title="Clear chat feed" class="p-3 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Interactive Conversational Feed -->
+      <div class="lg:col-span-7 glass-panel rounded-3xl p-6 flex flex-col justify-between shadow-2xl border border-slate-800/80 overflow-hidden">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800/80">
+          <div class="flex items-center gap-2.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+            <h2 class="text-sm font-semibold text-white">Conversational Feed</h2>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-slate-400">
+            <span id="gemini-badge" class="bg-indigo-950/80 border border-indigo-800/60 text-indigo-300 px-2.5 py-0.5 rounded-full">Gemini 3.8 Flash</span>
+          </div>
+        </div>
+
+        <!-- Message Feed Container -->
+        <div id="messages-container" class="flex-1 overflow-y-auto my-4 pr-2 space-y-4 max-h-[500px]">
+          <!-- Welcome message -->
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-sky-400 flex items-center justify-center shrink-0">
+              <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl rounded-tl-none p-4 max-w-lg text-sm leading-relaxed text-slate-200">
+              Hello! I am <span class="text-sky-300 font-semibold">Nova</span>, your voice assistant. You can speak to me by saying <span class="text-indigo-300 font-semibold">"Hey Nova"</span>, tap the microphone orb, or type below. I remember your facts and preferences across sessions!
+            </div>
+          </div>
+        </div>
+
+        <!-- Text Input & Send Bar -->
+        <form onsubmit="handleTextSubmit(event)" class="relative mt-2">
+          <input 
+            type="text" 
+            id="chat-input" 
+            placeholder="Type a message or memory command (e.g., 'Remember that I like Python')..." 
+            class="w-full bg-slate-900/90 border border-slate-800 focus:border-indigo-500 rounded-2xl pl-5 pr-14 py-3.5 text-sm text-white placeholder-slate-500 outline-none transition shadow-inner"
+          >
+          <button 
+            type="submit" 
+            class="absolute right-2.5 top-2.5 w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition active:scale-95 shadow-md shadow-indigo-600/30"
+          >
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- TAB 2: MEMORY VAULT (5-TIER INSPECTOR)         -->
+    <!-- ============================================== -->
+    <div id="tab-memory" class="hidden flex-1 flex-col gap-6">
+
+      <!-- Memory Header & Action Bar -->
+      <div class="glass-panel rounded-3xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-800/80">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="brain" class="w-6 h-6 text-indigo-400"></i>
+            Persistent Long-Term Memory (LTM) Vault
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Multi-tier memory architecture with hybrid semantic retrieval and cross-session persistence.</p>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <button onclick="exportMemoryReport()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-2 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-sky-400"></i>
+            <span>Export Report</span>
+          </button>
+          <button onclick="openAddMemoryModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-2 shadow-md shadow-indigo-600/25 transition">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Add Memory</span>
+          </button>
+          <button onclick="confirmResetMemory()" class="px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 text-xs font-medium flex items-center gap-1.5 transition">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span>Reset Vault</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Identity & Profile Overview Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- User Identity Card -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-800/80">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-3">
+            <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="user" class="w-4 h-4 text-sky-400"></i> Identity Profile
+            </span>
+            <span class="px-2 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">Tier 1</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div>
+              <span class="text-xs text-slate-500 block">Name:</span>
+              <span id="profile-name" class="font-semibold text-white">Unspecified</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-500 block">Communication Style:</span>
+              <span id="profile-style" class="text-slate-300 text-xs">Concise and friendly</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preferences Card -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-800/80">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-3">
+            <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="heart" class="w-4 h-4 text-rose-400"></i> Core Preferences
+            </span>
+            <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">Tier 2</span>
+          </div>
+          <div id="profile-preferences" class="flex flex-wrap gap-1.5">
+            <span class="text-xs text-slate-500 italic">No preferences stored yet</span>
+          </div>
+        </div>
+
+        <!-- Active Projects Card -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-800/80">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-3">
+            <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="folder-git-2" class="w-4 h-4 text-purple-400"></i> Active Projects
+            </span>
+            <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">Tier 3</span>
+          </div>
+          <div id="profile-projects" class="flex flex-wrap gap-1.5">
+            <span class="text-xs text-slate-500 italic">No active projects logged yet</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Long-Term Semantic Knowledge Bank Table -->
+      <div class="glass-panel rounded-3xl p-6 border border-slate-800/80">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+            <i data-lucide="database" class="w-4 h-4 text-indigo-400"></i>
+            Semantic Memory Bank
+            <span id="ltm-badge-count" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">0 Items</span>
+          </h3>
+          <span class="text-xs text-slate-400">Ranked by TF-IDF vector relevance & recency decay</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[10px]">
+              <tr>
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4">Memory Content</th>
+                <th class="py-3 px-4">Tags</th>
+                <th class="py-3 px-4">Created</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ltm-table-body" class="divide-y divide-slate-800/60 text-slate-300">
+              <tr>
+                <td colspan="5" class="py-8 text-center text-slate-500 italic">No long-term memories stored yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Episodic Cross-Session Summaries -->
+      <div class="glass-panel rounded-3xl p-6 border border-slate-800/80">
+        <h3 class="text-sm font-semibold text-white flex items-center gap-2 mb-3">
+          <i data-lucide="history" class="w-4 h-4 text-amber-400"></i>
+          Episodic Conversation Summaries (Cross-Session Experience)
+        </h3>
+        <div id="episodic-history-list" class="space-y-3">
+          <p class="text-xs text-slate-500 italic">No session episodes summarized yet.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- TAB 3: SECURITY & PRIVACY DASHBOARD            -->
+    <!-- ============================================== -->
+    <div id="tab-security" class="hidden flex-1 flex-col gap-6">
+
+      <div class="glass-panel rounded-3xl p-6 border border-slate-800/80">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <i data-lucide="shield" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">Security & Privacy Architecture</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Nova guarantees end-to-end privacy for voice, memory data at rest, and cloud prompt transmission.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Audio Privacy Card -->
+        <div class="glass-panel rounded-2xl p-6 border border-slate-800/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i data-lucide="mic-off" class="w-4 h-4 text-emerald-400"></i> Audio Privacy & Local Wake Word
+            </h3>
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-medium">100% Local</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            While listening for <strong class="text-white">"Hey Nova"</strong>, microphone audio is evaluated entirely on your local machine using OpenWakeWord ONNX. 
+            <span class="text-emerald-400 font-medium">Zero audio packets</span> are sent to the cloud while in standby.
+          </p>
+          <div class="pt-2 text-xs text-slate-400 border-t border-slate-800/80 flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>Temporary audio files are zero-byte shredded after transcription.</span>
+          </div>
+        </div>
+
+        <!-- Incognito / Ephemeral Mode Card -->
+        <div class="glass-panel rounded-2xl p-6 border border-slate-800/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i data-lucide="eye-off" class="w-4 h-4 text-indigo-400"></i> Ephemeral Incognito Mode
+            </h3>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="privacy-mode-toggle" onchange="togglePrivacyModeUI(this.checked)" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            When enabled, Nova runs in <span class="text-indigo-300 font-semibold">Incognito Mode</span>. No conversational transcripts or user memories will be saved to disk.
+          </p>
+          <div class="pt-2 text-xs text-slate-400 border-t border-slate-800/80 flex items-center gap-1.5">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span>Perfect for sensitive discussions or guest users.</span>
+          </div>
+        </div>
+
+        <!-- Storage Encryption Card -->
+        <div class="glass-panel rounded-2xl p-6 border border-slate-800/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i data-lucide="file-key" class="w-4 h-4 text-sky-400"></i> AES-256 Memory Storage
+            </h3>
+            <span id="enc-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-medium">Standard JSON</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Protects your personal knowledge bank from unauthorized local programs. Supports AES-256 CBC storage encryption with machine-derived Fernet keys.
+          </p>
+        </div>
+
+        <!-- PII Redaction & Prompt Injection Card -->
+        <div class="glass-panel rounded-2xl p-6 border border-slate-800/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-purple-400"></i> PII Redaction & Prompt Injection Defense
+            </h3>
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">Active</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Transcripts are automatically scanned to scrub credit cards, SSNs, API tokens, and passwords. User speech is enclosed in defensive XML boundaries to neutralize jailbreak audio.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ADD MEMORY MODAL -->
+  <div id="add-memory-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl p-6 max-w-md w-full border border-slate-800 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-semibold text-white flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-400"></i>
+          Add New Memory
+        </h3>
+        <button onclick="closeAddMemoryModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="handleAddMemorySubmit(event)" class="space-y-4">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Category</label>
+          <select id="new-mem-cat" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+            <option value="personal">Personal Fact</option>
+            <option value="preference">Preference / Habit</option>
+            <option value="work_project">Project / Goal</option>
+            <option value="technical">Technical Knowledge</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Memory Content</label>
+          <textarea id="new-mem-content" rows="3" placeholder="e.g. User prefers Python and uses dark mode..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 placeholder-slate-500"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeAddMemoryModal()" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-md shadow-indigo-600/30">Save Memory</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

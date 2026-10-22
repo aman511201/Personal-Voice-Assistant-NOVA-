@@ -1,0 +1,35 @@
+# ==============================================================================
+# NOVA AI Voice Assistant - Requirements Specification
+# Compatible with Python 3.10, 3.11, and 3.12+ (Windows, macOS, Linux)
+# ==============================================================================
+
+# --- Modern Web Framework & Real-Time API ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+websockets>=13.0
+python-multipart>=0.0.9
+anyio>=4.4.0
+
+# --- AI & Large Language Models ---
+google-genai>=2.0.0
+python-dotenv>=1.0.1
+requests>=2.31.0
+
+# --- Audio Ingestion, Processing & DSP ---
+sounddevice>=0.5.0
+soundfile>=0.12.1
+numpy>=1.26.0
+scipy>=1.13.0
+
+# --- Long-Term Memory (Hybrid Semantic Search) ---
+scikit-learn>=1.4.0
+
+# --- On-Device Local Wake Word & Inference ---
+openwakeword>=0.6.0
+onnxruntime>=1.18.0
+
+# --- Text to Speech (TTS) ---
+pyttsx3>=2.90
+
+# --- Enterprise Security & Storage Encryption (AES-256) ---
+cryptography>=42.0.0

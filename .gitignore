@@ -1,0 +1,42 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Secrets & Environment Variables (NEVER COMMIT)
+.env
+*.env.local
+
+# Temporary Audio Files & Recordings
+*.wav
+*.webm
+*.mp3
+!audio/test.mp3
+voice_input.wav
+recorded.wav
+
+# Persistent Memory Storage (Keep local data private)
+memory/*.json
+memory/*.key
+memory/*.md
+!memory/.gitkeep
+
+# IDEs & OS Files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs & scratch
+*.log
+scratch/
