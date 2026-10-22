@@ -130,7 +130,9 @@ def build_hey_nova_model(output_path="hey_nova.onnx"):
         dummy,
         output_path,
         input_names=["onnx::Flatten_0"],
-        output_names=["output"]
+        output_names=["output"],
+        export_params=True,
+        dynamo=False
     )
     print(f"✨ Successfully exported {output_path} ({os.path.getsize(output_path)/1024:.1f} KB)")
     return output_path
